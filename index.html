@@ -11,7 +11,6 @@
 				font-family: Arial, sans-serif;
 			}
 
-
 			/* Start Screen */
 			#start-screen {
 				position: absolute;
@@ -55,7 +54,7 @@
 			/* === HP bar === */
 			#health-bar {
 				position: absolute;
-				top: 20px;
+				bottom: 70px;
 				left: 50%;
 				transform: translateX(-50%);
 				width: 300px;
@@ -84,35 +83,244 @@
 				font-weight: bold;
 				line-height: 24px;
 			}
+			
+			/* HP bar flash when core takes damage */
+			@keyframes hpFlash {
+				0% {
+					box-shadow: 0 0 10px #ff5252;
+				}
+				100% {
+					box-shadow: none;
+				}
+			}
 
-			/* === Attack unit UI === */
-			#tower-ui {
+			.hp-flash {
+				animation: hpFlash 2s ease-out;
+			}
+			
+			/* === Boss HP bar (screen UI under timer) === */
+			#boss-health-bar {
 				position: absolute;
-				bottom: 20px;
+				top: 120px;
 				left: 50%;
 				transform: translateX(-50%);
-				display: flex;
-				gap: 10px;
+				width: 320px;
+				height: 18px;
+				background: rgba(0, 0, 0, 0.6);
+				border: 2px solid #ff5555;
+				border-radius: 10px;
+				overflow: hidden;
+				display: none;
 				z-index: 20;
-				display: none; /* hide before game start */
+			}
+
+			#boss-health-fill {
+				height: 100%;
+				width: 100%;
+				background: linear-gradient(to right, #ff7675, #d63031);
+				transition: width 0.25s ease;
+			}
+
+			#boss-health-text {
+				position: absolute;
+				top: 0;
+				left: 50%;
+				transform: translateX(-50%);
+				color: #ffffff;
+				font-weight: bold;
+				font-size: 12px;
+				line-height: 18px;
+			}
+			
+			/* === Wave panel (Wave / Timer / Warning) === */
+			#top-panel {
+				position: absolute;
+				top: 52px;              
+				left: 50%;
+				transform: translateX(-50%);
+				background: rgba(0, 0, 0, 0.8);
+				border-radius: 12px;
+				padding: 4px 12px 6px;
+				display: none;          
+				z-index: 20;
+				text-align: center;
+				min-width: 140px;
+			}
+
+			#wave-label {
+				font-size: 18px;
+				color: #ffd54f;
+				letter-spacing: 1px;
+				text-transform: uppercase;
+				margin-bottom: 2px;
+			}
+
+			/* Timer */
+			#wave-timer {
+				color: #ffffff;
+				font-size: 20px;
+				font-weight: bold;
+				text-shadow: 0 0 5px #000000;
+			}
+
+			/* Warning */
+			#wave-warning {
+				margin-top: 4px;
+				font-size: 12px;
+				min-height: 16px;   
+				color: #ff5555;
+			}
+
+			/* Warning blink */
+			@keyframes warningBlink {
+				0%, 100% { opacity: 0.3; }
+				50% { opacity: 1; }
+			}
+
+			.warning-active {
+				animation: warningBlink 0.5s ease-in-out infinite;
+			}
+
+			/* Center screen message (3, 2, 1, Wave 1, etc.) */
+			#center-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				color: #ffffff;
+				font-size: 64px;
+				font-weight: bold;
+				text-shadow: 0 0 15px #000000;
+				z-index: 30;
+				display: none;
+			}
+			
+			/* === Left side tower panel === */
+			#left-panel {
+				position: absolute;
+				bottom: 40px;
+				left: 40px;
+				width: 220px;
+				padding: 12px 14px 14px;
+				background: rgba(0, 0, 0, 0.75);
+				border-radius: 12px;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+				z-index: 20;
+			}
+	
+			/* Coin UI inside the panel */
+			#coin-ui {
+				position: static;
+				margin-bottom: 10px;
+				display: none;
+				color: #ffd700;
+				font-weight: bold;
+				text-align: center;
+				white-space: nowrap;
+			}
+
+			#coin-ui span {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+			}
+
+			#coin-icon {
+				font-size: 18px;
+				margin-right: 4px;
+			}
+
+			#coin-amount {
+				font-size: 16px;
+			}
+
+			.coin-float {
+				position: absolute;
+				top: -28px;
+				left: 50%;
+				transform: translate(-50%, 0);
+				font-size: 18px;
+				font-weight: bold;
+				pointer-events: none;
+				opacity: 1;
+				white-space: nowrap;
+				transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+			}
+
+			/* Tower button grid inside the panel */
+			#tower-ui {
+				position: static;
+				transform: none;
+				width: 100%;
+				display: none;
+				flex-wrap: wrap;
+				gap: 8px;
 			}
 		
 			.tower-btn {
-				font-size: 16px;
-				padding: 8px 20px;
-				background: #0984e3;
-				border: none;
-				border-radius: 8px;
-				color: white;
+				flex: 0 0 48%;
+				border: 1px solid #444;
+				border-radius: 6px;
+				padding: 6px 10px;
+				background: rgba(0, 0, 0, 0.4);
+				color: #fff;
 				cursor: pointer;
-				transition: 0.2s;
+				font-size: 14px;
+				transition: transform 0.1s ease-out,
+							box-shadow 0.1s ease-out,
+							border-color 0.1s ease-out,
+							background 0.1s ease-out;
+				
+				/* 가격/이름 나란히 배치 */
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.tower-btn .label {
+				font-size: 14px;
+			}
+
+			.tower-btn .cost {
+				font-size: 14px;
+				color: #ffd700;
+				margin-left: 6px;
 			}
 
 			.tower-btn:hover {
-				background: #74b9ff;
-			}	
-		
-			//* Highlight selected tower type while placing */
+				background: rgba(116, 185, 255, 0.7);
+			}
+			
+			/* Highlight when this tower is currently selected for placement */
+			.tower-btn.placing {
+				border-color: #ffd700;
+				box-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
+				transform: translateY(-2px);
+			}
+
+			/* highlight class (old) – keep for compatibility */
+			.placing {
+				background: #00cec9 !important;
+			}
+			
+			#tower-tooltip {
+				position: absolute;
+				min-width: 130px;
+				max-width: 200px;
+				padding: 6px 10px;
+				background: rgba(0, 0, 0, 0.8);
+				color: #ffffff;
+				border-radius: 8px;
+				font-size: 13px;
+				line-height: 1.4;
+				pointer-events: none;
+				white-space: pre-line;
+				display: none;
+				z-index: 30;
+				box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+			}
+
+			/* Highlight selected tower type while placing */
 			.placing {
 				background: #00cec9 !important;
 			}
@@ -131,17 +339,62 @@
 			<div id="health-fill"></div>
 			<span id="health-text">HP: 20</span>
 		</div>
+		
+		<!-- Wave timer (countdown from 1:00 to 0:00) -->
+		<div id="top-panel">
+			<div id="wave-label">Wave 1</div>
+			<div id="wave-timer">01:00</div>
+			<div id="wave-warning"></div>
+		</div>
+		
+		<!-- Boss HP bar (shows only during boss phase) -->
+		<div id="boss-health-bar">
+		  <div id="boss-health-fill"></div>
+		  <span id="boss-health-text">Boss HP: 50 / 50</span>
+		</div>
+		
+		<!-- Center screen message (3, 2, 1, Wave 1) -->
+		<div id="center-message"></div>
+		
+		<!-- Left side panel: coin + tower buttons -->
+		<div id="left-panel">
+			<!-- Coin UI -->
+			<div id="coin-ui">
+				<span id="coin-icon">🪙</span>
+				<span id="coin-amount">0</span>
+			</div>
 
-		<!-- Install Attack unit UI -->
-		<div id="tower-ui">
-			<button class="tower-btn" data-type="basic">Basic Tower</button>
-			<button class="tower-btn" data-type="rapid">Rapid Tower</button>
+			<!-- Tower buttons -->
+			<div id="tower-ui">
+				<button class="tower-btn" data-type="basic">
+					<span class="label">Basic Tower</span>
+					<span class="cost">🪙 5</span>
+				</button>
+
+				<button class="tower-btn" data-type="double">
+					<span class="label">Double Tower</span>
+					<span class="cost">🪙 10</span>
+				</button>
+
+				<button class="tower-btn" data-type="sniper">
+					<span class="label">Sniper</span>
+					<span class="cost">🪙 15</span>
+				</button>
+
+				<button class="tower-btn" data-type="tower4">
+					<span class="label">Tower 4</span>
+					<span class="cost">🪙 5</span>
+				</button>
+			</div>
 		</div>
 
 		<!-- Game Canvas -->
 		<div id="game-container"></div>
 		
-		<!-- Main game entry scrip -->
+		<!-- Main game entry script -->
 		<script type="module" src="/main.js"></script>
+		
+		<div id="tower-tooltip"></div>
+		
 	</body>
 </html>
