@@ -34,6 +34,7 @@ const waveDuration = 60;    // seconds
 
 let waveTimeLeft = waveDuration;
 let waveTimerRunning = false;
+let waveHasStarted = false;
 
 let tooltipEl;              // tower stats tooltip element
 let hoveredTower = null;    // currently hovered tower (3D)
@@ -200,6 +201,7 @@ function startWaveIntro() {
 		centerMessageEl.style.display = 'none';
 
 		// Start wave timer and enable enemy spawning after intro is done
+		waveHasStarted = true;
 		waveTimerRunning = true;
 		if (enemies) enemies.spawningEnabled = true;
 	}, 4000);
@@ -447,105 +449,126 @@ function initGame() {
 
 // Main animation, game loop
 function animate() {
-	requestAnimationFrame(animate);
-	const now = performance.now();
-	const delta = (now - lastTime) / 1000;
-	lastTime = now;
+    requestAnimationFrame(animate);
+    const now = performance.now();
+    const delta = (now - lastTime) / 1000;
+    lastTime = now;
 
-	// Accumulate global time for the sky and boss logic
-	globalTime += delta;
+    // Track total world time (for day/night system)
+    globalTime += delta;
 
-	// Update sun, sky, shadows based on global time
-	if (world && typeof world.updateDayNight === 'function') {
-		world.updateDayNight(globalTime, bossPhase);
-	}
-
-	if (waveTimerRunning) {
-		waveTimeLeft -= delta;
-
-		if (waveTimeLeft <= 0) {
-			waveTimeLeft = 0;
-			waveTimerRunning = false;
-
-			if (!bossPhase) {
-				bossPhase = true;
-
-				if (enemies) {
-					enemies.spawningEnabled = false;
-
-					if (Array.isArray(enemies.enemies)) {
-						for (const e of enemies.enemies) {
-							if (!e) continue;
-
-							if (typeof enemies.createEnemyDebris === 'function') {
-								enemies.createEnemyDebris(e.position);
-							}
-							if (e.userData) {
-								e.userData.isDead = true;
-							}
-
-							if (e.parent) {
-								e.parent.remove(e);
-							}
-						}
-						enemies.enemies = [];
-					}
-				}
-
-				if (!bossWarningShown) {
-					bossWarningShown = true;
-					showBossWarning();
-				}
-
-				if (enemies && typeof enemies.spawnBoss === 'function') {
-					enemies.spawnBoss();
-				}
-			}
-		}
-
-		updateWaveTimerUI();
-	}
-	
-	let waveProgress = 0;
-    if (!bossPhase && waveTimerRunning) {
-        waveProgress = 1 - waveTimeLeft / waveDuration; // 0 → 1
-        if (waveProgress < 0) waveProgress = 0;
-        if (waveProgress > 1) waveProgress = 1;
+    // --- WORLD LIGHTING / DAY-NIGHT ---
+    if (world && typeof world.updateDayNight === 'function') {
+        world.updateDayNight(globalTime, bossPhase);
     }
-	
-    // ---- Spawn ----
+
+    // --- WAVE TIMER UPDATE ---
+    if (waveTimerRunning) {
+        waveTimeLeft -= delta;
+
+        if (waveTimeLeft <= 0) {
+            waveTimeLeft = 0;
+            waveTimerRunning = false;
+
+            // ---- ENTER BOSS PHASE AFTER THE WAVE ----
+            if (!bossPhase) {
+                bossPhase = true;
+
+                // Stop spawning & remove leftover enemies
+                enemies.spawningEnabled = false;
+                for (const e of enemies.enemies) {
+                    if (typeof enemies.createEnemyDebris === 'function') {
+                        enemies.createEnemyDebris(e.position);
+                    }
+                    if (e.parent) e.parent.remove(e);
+                }
+                enemies.enemies = [];
+
+                // Show warning and spawn boss
+                if (!bossWarningShown) {
+                    bossWarningShown = true;
+                    showBossWarning();
+                }
+                if (typeof enemies.spawnBoss === 'function') {
+                    enemies.spawnBoss();
+                }
+            }
+        }
+
+        updateWaveTimerUI();
+    }
+
+    // --- CALCULATE WAVE PROGRESS (0→1) ---
+    let waveProgress = 0;
+    if (!bossPhase && waveTimerRunning) {
+        waveProgress = 1 - waveTimeLeft / waveDuration;
+        waveProgress = Math.min(Math.max(waveProgress, 0), 1);
+    }
+
+    // --- SPAWNER: CREATE ENEMIES ---
     if (spawner) {
         spawner.update(delta, waveProgress);
     }
 
-    // ---- EnemyManager ----
+    // --- ENEMY UPDATE (movement, chasing, hp bars) ---
     if (enemies && world.core) {
         enemies.update(delta, towers, camera);
+    }
+
+    // --- ENEMY COLLISIONS (tower melee, core hits) ---
+    if (enemies && world.core) {
         enemies.checkCollisions(world.core.position, towers, handleCoreHit);
     }
-	
-	// 2) other update
 
-	// Rotate the core slowly for effect
-	if (world.core) world.core.rotation.y += 0.01;
+    // --- TOWER UPDATES ---
+    for (const tower of towers) {
+        tower.update(enemies.enemies, delta, camera);
+    }
 
-	// Enemy movement + tower/core collision
-	if (enemies && world.core) {
-		enemies.update(delta, towers, camera);
-		enemies.checkCollisions(world.core.position, towers, handleCoreHit);
-	}
+    // --- BOSS HP BAR UI ---
+    updateBossHealthUI();
 
-	// Tower updates (target tracking + bullet updates + hp bar + debris)
-	for (const tower of towers) {
-		tower.update(enemies.enemies, delta, camera);
-	}
+    // --- WAVE COMPLETION CHECK ---
+    // Conditions to start next wave:
+    //  • Boss phase is finished
+    //  • No enemies remain
+    //  • Spawning is disabled (wave ended properly)
+    if (
+        bossPhase &&
+        enemies.enemies.length === 0
+    ) {
+        // End boss phase
+        bossPhase = false;
+        bossWarningShown = false;
 
-	// Update Boss HP UI (screen bar)
-	updateBossHealthUI();
+        // Advance wave
+        currentWave++;
+        waveLabelEl.textContent = `Wave ${currentWave}`;
 
-	controls.update();
-	renderer.render(scene, camera);
+        // Change biome
+        if (world && typeof world.setBiomeForWave === 'function') {
+            world.setBiomeForWave(currentWave);
+        }
+
+        // Prepare next wave
+        spawner.setWave(currentWave);
+        enemies.spawningEnabled = false; // turned on after countdown
+
+        waveTimeLeft = waveDuration;
+        updateWaveTimerUI();
+
+        // Start next 3-2-1 intro
+        startWaveIntro();
+    }
+
+    // --- CORE ROTATION ---
+    if (world.core) world.core.rotation.y += 0.01;
+
+    // --- RENDER ---
+    controls.update();
+    renderer.render(scene, camera);
 }
+
 
 
 // Handle when an enemy hits the core

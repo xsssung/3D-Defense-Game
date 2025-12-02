@@ -10,11 +10,20 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "// 11.29.25 Ver.2",
   "dependencies": {
     "three": "^0.168.0"
   },
   "devDependencies": {
-    "vite": "^5.4.2"
-  }
+    "vite": "^5.4.21"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xxunghyuk/3D-Defense-Game.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/xxunghyuk/3D-Defense-Game/issues"
+  },
+  "homepage": "https://github.com/xxunghyuk/3D-Defense-Game#readme"
 }

@@ -1,8 +1,17 @@
 // towers.js
 import * as THREE from 'three';
+import { textureLoad, TextureLoader } from 'three/tsl';
 
 const GRID_SIZE = 2;
 const BLOCK_SIZE = 1.8;
+const textureLoader = new THREE.TextureLoader();
+
+const towerTex = textureLoader.load("textures/Rock_Wall_DIFF.png");
+
+towerTex.wrapS = THREE.RepeatWrapping;
+towerTex.wrapT = THREE.RepeatWrapping;
+
+towerTex.repeat.set(0.2,0.2);
 
 export class Tower {
 	constructor(scene, position, type = 'basic', onEnemyKilled = null, existingMesh = null) {
@@ -70,7 +79,7 @@ export class Tower {
 			// BASIC: single cube
 			const size = BLOCK_SIZE;
 			const geo = new THREE.BoxGeometry(size, size, size);
-			const mat = new THREE.MeshStandardMaterial({ color: 0xf1c40f }); // yellow
+			const mat = new THREE.MeshStandardMaterial({ map: towerTex, color: 0xf1c40f }); // yellow
 			const mesh = new THREE.Mesh(geo, mat);
 
 			mesh.position.copy(this.position);
@@ -91,13 +100,13 @@ export class Tower {
 
 			// Bottom cube
 			const baseGeo = new THREE.BoxGeometry(baseSize, baseSize, baseSize);
-			const baseMat = new THREE.MeshStandardMaterial({ color: 0x00cec9 });
+			const baseMat = new THREE.MeshStandardMaterial({ map: towerTex, color: 0x00cec9 });
 			const baseMesh = new THREE.Mesh(baseGeo, baseMat);
 			baseMesh.position.set(0, baseSize / 2, 0);
 
 			// Top cube (smaller)
 			const topGeo = new THREE.BoxGeometry(topSize, topSize, topSize);
-			const topMat = new THREE.MeshStandardMaterial({ color: 0x00cec9 });
+			const topMat = new THREE.MeshStandardMaterial({ map: towerTex, color: 0x00cec9 });
 			const topMesh = new THREE.Mesh(topGeo, topMat);
 			topMesh.position.set(0, baseSize + topSize / 2, 0);
 
@@ -122,7 +131,7 @@ export class Tower {
 			const depth  = BLOCK_SIZE * 0.8;
 
 			const geo = new THREE.BoxGeometry(width, height, depth);
-			const mat = new THREE.MeshStandardMaterial({ color: 0x000000 }); // black
+			const mat = new THREE.MeshStandardMaterial({ map: towerTex, color: 0x000000 }); // black
 			const mesh = new THREE.Mesh(geo, mat);
 
 			mesh.position.copy(this.position);
@@ -138,7 +147,7 @@ export class Tower {
 			// Default: pillar-like tower (e.g., tower4)
 			const height = 4;
 			const geo = new THREE.BoxGeometry(BLOCK_SIZE, height, BLOCK_SIZE);
-			const mat = new THREE.MeshStandardMaterial({ color: 0xf1c40f });
+			const mat = new THREE.MeshStandardMaterial({ map: towerTex, color: 0xf1c40f });
 			const mesh = new THREE.Mesh(geo, mat);
 
 			mesh.position.copy(this.position);

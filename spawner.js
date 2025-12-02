@@ -15,8 +15,13 @@ export class WaveSpawner {
 		// Current wave index (1-based)
 		this.currentWave = 1;
 
+		//wave size 
+		this.enemiesToSpawn = 50;
+		this.spawnedCount = 0;
+
 		// Track whether a mid-wave mini boss has been spawned this wave
-		this.miniBossSpawned = false;
+		this.miniBossToSpawn = 1;
+		this.miniBossSpawnedCount = 0;
 
 		// Default per-wave spawn interval configs (ms)
 		// As the wave progresses (progress 0 -> 1),
@@ -38,6 +43,12 @@ export class WaveSpawner {
 	setWave(waveIndex) {
 		this.currentWave = waveIndex;
 		this.resetTimer();
+
+		//Increase wave size each round
+		this.enemiesToSpawn = 50 + (waveIndex - 1) * 5;
+		this.spawnedCount = 0;
+
+		this.miniBossToSpawn = 1 + (waveIndex -1) * 3;
 	}
 
 	/**
@@ -46,7 +57,7 @@ export class WaveSpawner {
 	 */
 	resetTimer() {
 		this.elapsedSinceSpawn = 0;
-		this.miniBossSpawned = false;
+		this.miniBossSpawnedCount = 0;
 	}
 
 	/**
@@ -84,17 +95,20 @@ export class WaveSpawner {
 		if (this.elapsedSinceSpawn >= currentInterval) {
 			// Mid-wave mini boss: spawn once per wave around the middle
 			if (
-				!this.miniBossSpawned &&
+				!(this.miniBossSpawnedCount == this.miniBossToSpawn) &&
 				p > 0.4 &&
 				p < 0.9 &&
 				typeof this.enemyManager.spawnMiniBoss === 'function'
 			) {
 				this.enemyManager.spawnMiniBoss();
-				this.miniBossSpawned = true;
+				this.miniBossSpawnedCount ++;
 			} else {
 				// Default: spawn a normal enemy
-				if (typeof this.enemyManager.spawnEnemy === 'function') {
+				if(this.spawnedCount < this.enemiesToSpawn) {
 					this.enemyManager.spawnEnemy();
+					this.spawnedCount++;
+				} else {
+					this.enemyManager.spawningEnabled = false;
 				}
 			}
 

@@ -84,9 +84,16 @@ export class World {
 	// Core (player base)
 	// --------------------------------------------------------
 	createCore() {
+		const loader = new THREE.TextureLoader();
+
+		const coreTex = loader.load("textures/Old_Red_Brick_DIFF.png");
+		coreTex.wrapS = THREE.RepeatWrapping;
+		coreTex.wrapT = THREE.RepeatWrapping;
+		coreTex.repeat.set(0.2,0.2);
+
 		const coreGeo = new THREE.BoxGeometry(2, 4, 2);
 		const coreMat = new THREE.MeshStandardMaterial({
-			color: 0xff0000,
+			map: coreTex,
 			metalness: 0.5,
 			roughness: 0.2,
 			emissive: 0x111122,
