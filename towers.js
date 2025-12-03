@@ -7,17 +7,20 @@ const BLOCK_SIZE = 1.8;
 const textureLoader = new THREE.TextureLoader();
 
 const towerTex = textureLoader.load("textures/Rock_Wall_DIFF.png");
-
 towerTex.wrapS = THREE.RepeatWrapping;
 towerTex.wrapT = THREE.RepeatWrapping;
-
 towerTex.repeat.set(0.2,0.2);
+
+const towerTexDamaged = textureLoader.load("textures/Rock_Wall_Damaged_DIFF.png");
+towerTexDamaged.wrapS = THREE.RepeatWrapping;
+towerTexDamaged.wrapT = THREE.RepeatWrapping;
+towerTexDamaged.repeat.set(0.2,0.2);
 
 export class Tower {
 	constructor(scene, position, type = 'basic', onEnemyKilled = null, existingMesh = null) {
 		this.scene = scene;                      // Reference to the main scene
 		this.position = position.clone();        // Tower placement position
-		this.type = type;                        // "core", "basic", "double", "sniper", "tower4"
+		this.type = type;                        // "core", "basic", "double", "sniper", "cannon"
 		this.lastShot = 0;                       // Timestamp of last fired bullet
 		this.bullets = [];                       // Active bullets
 		this.onEnemyKilled = onEnemyKilled;      // Callback when an enemy is killed
@@ -43,8 +46,8 @@ export class Tower {
 			this.range = 50;
 			this.maxHp = 5;
 
-		} else if (type === 'tower4') {
-			this.fireRate = 1200;
+		} else if (type === 'cannon') {
+			this.fireRate = 2400;
 			this.shotsPerBurst = 1;
 			this.range = 10;
 			this.maxHp = 5;
@@ -280,6 +283,28 @@ export class Tower {
 		}
 	}
 
+	// Update texture based on health 
+	updateTex() {
+		const ration = this.hp / this.maxHp;
+
+		const newTex = (ratio <= 0.5) ? towerTexDamaged : towerTex;
+
+		if (this.mesh instanceof THREE.Mesh) {
+			this.mesh.material.map = newTex;
+			this.mesh.material.needsUpdate = true;
+			return;
+		}
+
+		if (this.mesh instanceof THREE.Group) {
+			this.mesh.traverse(child => {
+				if (child.isMesh && child.material) {
+					child.material.map = newTex;
+					child.material.needsUpdate = true;
+				}
+			});
+		}
+	}
+
 	// Apply damage to this tower
 	takeDamage(amount) {
 		if (this.isDestroyed) return;
@@ -293,6 +318,7 @@ export class Tower {
 		}
 
 		this.updateHpBar();
+		this.updateTex();
 	}
 
 	// Called when tower HP reaches 0 - create break apart effect
@@ -534,8 +560,13 @@ export class Tower {
 						if (target.userData.hp <= 0) {
 							this.onEnemyKilled(target);
 						}
-
-					// Basic / tower4 / others: 1 damage per hit
+					//cannon damage
+					} else if (this.type === 'cannon') {
+						target.userData.hp -= 15;
+						if(target.userData.hp <= 0) {
+							this.onEnemyKilled(target);
+						}	
+					// Basic / others: 1 damage per hit
 					} else {
 						target.userData.hp -= 1;
 						if (target.userData.hp <= 0) {

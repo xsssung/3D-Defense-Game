@@ -168,10 +168,10 @@ export class EnemyManager {
 	// Spawn a single boss enemy (large, slow, high HP)
 	spawnBoss() {
 		// If a boss already exists, do not spawn another one
-		const existingBoss = this.enemies.find(
-			(e) => e.userData && e.userData.isBoss
-		);
-		if (existingBoss) return;
+		// const existingBoss = this.enemies.find(
+		// 	(e) => e.userData && e.userData.isBoss
+		// );
+		// if (existingBoss) return;
 
 		// Create a large sphere mesh as the boss
 		const bossGeo = new THREE.SphereGeometry(4, 32, 32);
@@ -184,7 +184,32 @@ export class EnemyManager {
 		const boss = new THREE.Mesh(bossGeo, bossMat);
 
 		// Starting position (far away from the core)
-		boss.position.set(0, 2, -60);
+		const range = 60; // Distance from center to spawn
+		const side = Math.floor(Math.random() * 4);
+		let x = 0, z = 0;
+
+		// Left side
+		if (side === 0) {
+			x = -range;
+			z = Math.random() * range * 2 - range;
+		}
+		// Right side
+		if (side === 1) {
+			x = range;
+			z = Math.random() * range * 2 - range;
+		}
+		// Top side
+		if (side === 2) {
+			z = -range;
+			x = Math.random() * range * 2 - range;
+		}
+		// Bottom side
+		if (side === 3) {
+			z = range;
+			x = Math.random() * range * 2 - range;
+		}
+
+		boss.position.set(x, 3, z);
 
 		// Enable shadows
 		boss.castShadow = true;

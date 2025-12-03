@@ -5,6 +5,27 @@ const FIELD_SIZE = 400;
 const GRID_SIZE  = 2;
 const SKY_RADIUS = 600; // Radius of the sky dome
 
+const loader = new THREE.TextureLoader();
+
+const coreTex = loader.load("textures/Old_Red_Brick_DIFF.png");
+coreTex.wrapS = THREE.RepeatWrapping;
+coreTex.wrapT = THREE.RepeatWrapping;
+coreTex.repeat.set(1,1);
+
+const coreTexSmallDamage = loader.load("textures/Old_Red_Brick_Small_Cracks_DIFF.png");
+coreTexSmallDamage.wrapS = THREE.RepeatWrapping;
+coreTexSmallDamage.wrapT = THREE.RepeatWrapping;
+coreTexSmallDamage.repeat.set(1,1);
+
+const coreTexLargeDamage = loader.load("textures/Old_Red_Brick_Large_Cracks_DIFF.png");
+coreTexLargeDamage.wrapS = THREE.RepeatWrapping;
+coreTexLargeDamage.wrapT = THREE.RepeatWrapping;
+coreTexLargeDamage.repeat.set(1,1);
+
+const tex = loader.load('textures/grass_pixel.jpg'); // <-- put your file here
+
+
+
 export class World {
 	constructor(scene) {
 		this.scene = scene;  // Reference to main Three.js scene
@@ -26,10 +47,6 @@ export class World {
 	// --------------------------------------------------------
 	createField() {
 		const planeGeo = new THREE.PlaneGeometry(FIELD_SIZE, FIELD_SIZE);
-
-		// Load pixel-style grass texture
-		const loader = new THREE.TextureLoader();
-		const tex = loader.load('textures/grass_pixel.jpg'); // <-- put your file here
 
 		// Repeat texture across the field
 		tex.wrapS = THREE.RepeatWrapping;
@@ -84,13 +101,6 @@ export class World {
 	// Core (player base)
 	// --------------------------------------------------------
 	createCore() {
-		const loader = new THREE.TextureLoader();
-
-		const coreTex = loader.load("textures/Old_Red_Brick_DIFF.png");
-		coreTex.wrapS = THREE.RepeatWrapping;
-		coreTex.wrapT = THREE.RepeatWrapping;
-		coreTex.repeat.set(0.2,0.2);
-
 		const coreGeo = new THREE.BoxGeometry(2, 4, 2);
 		const coreMat = new THREE.MeshStandardMaterial({
 			map: coreTex,
@@ -317,6 +327,20 @@ export class World {
 		}
 	}
 
+	//update core texture based on damage
+	updateCoreTex(coreHealth) {
+		if (!this.core) return;
+
+		if (coreHealth <= 7) {
+			this.core.material.map = coreTexLargeDamage;
+		} else if (coreHealth <= 15) {
+			this.core.material.map = coreTexSmallDamage;
+		} else {
+			this.core.material.map = coreTex;
+		}
+
+		this.core.material.needsUpdate = true;
+	}
 
 	// --------------------------------------------------------
 	// Initialize all world elements

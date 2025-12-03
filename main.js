@@ -46,7 +46,7 @@ const TOWER_COSTS = {
     basic: 5,
     double: 10,
     sniper: 15,
-    tower4: 5
+    cannon: 25
 };
 
 // Tower stats (hard-coded based on current design)
@@ -72,7 +72,7 @@ function getTowerStats(type, towerInstance = null) {
         shotsPerBurst = 1;
         maxHp = 5;
 
-    } else if (type === 'tower4') {
+    } else if (type === 'cannon') {
         range = 10;
         fireDelayMs = 1200;
         shotsPerBurst = 1;
@@ -144,27 +144,27 @@ function updateWaveTimerUI() {
 	waveTimerEl.textContent = `${minutes}:${secondsStr}`;
 }
 
-function updateBossHealthUI() {
-	if (!enemies || !bossHealthBar) return;
+// function updateBossHealthUI() {
+// 	if (!enemies || !bossHealthBar) return;
 
-	if (typeof enemies.getBoss !== 'function') return;
+// 	if (typeof enemies.getBoss !== 'function') return;
 
-	const boss = enemies.getBoss();
-	if (!boss || !boss.userData) {
-		bossHealthBar.style.display = 'none';
-		return;
-	}
+// 	const boss = enemies.getBoss();
+// 	if (!boss || !boss.userData) {
+// 		bossHealthBar.style.display = 'none';
+// 		return;
+// 	}
 
-	const hp = typeof boss.userData.hp === 'number' ? boss.userData.hp : 0;
-	const maxHp =
-		typeof boss.userData.maxHp === 'number' ? boss.userData.maxHp : 1;
+// 	const hp = typeof boss.userData.hp === 'number' ? boss.userData.hp : 0;
+// 	const maxHp =
+// 		typeof boss.userData.maxHp === 'number' ? boss.userData.maxHp : 1;
 
-	const ratio = Math.max(0, hp / maxHp);
+// 	const ratio = Math.max(0, hp / maxHp);
 
-	bossHealthFill.style.width = ratio * 100 + '%';
-	bossHealthText.textContent = `Boss HP: ${hp} / ${maxHp}`;
-	bossHealthBar.style.display = 'block';
-}
+// 	bossHealthFill.style.width = ratio * 100 + '%';
+// 	bossHealthText.textContent = `Boss HP: ${hp} / ${maxHp}`;
+// 	bossHealthBar.style.display = 'block';
+// }
 
 // Show "3, 2, 1" and "Wave 1" at the center, then start the wave timer and enemy spawning
 function startWaveIntro() {
@@ -194,7 +194,7 @@ function startWaveIntro() {
 	}, 2000);
 
 	setTimeout(() => {
-		centerMessageEl.textContent = 'Wave 1';
+		centerMessageEl.textContent = `Wave ${currentWave}`;
 	}, 3000);
 
 	setTimeout(() => {
@@ -313,12 +313,12 @@ function initGame() {
 	tooltipEl = document.getElementById('tower-tooltip');
 	
 	// Boss HP UI elements
-	bossHealthBar  = document.getElementById('boss-health-bar');
-	bossHealthFill = document.getElementById('boss-health-fill');
-	bossHealthText = document.getElementById('boss-health-text');
-	if (bossHealthBar) {
-		bossHealthBar.style.display = 'none'; 
-	}
+	// bossHealthBar  = document.getElementById('boss-health-bar');
+	// bossHealthFill = document.getElementById('boss-health-fill');
+	// bossHealthText = document.getElementById('boss-health-text');
+	// if (bossHealthBar) {
+	// 	bossHealthBar.style.display = 'none'; 
+	// }
 	
 	// Get wave / timer / warning / center-message elements
 	topPanelEl     = document.getElementById('top-panel');
@@ -490,7 +490,10 @@ function animate() {
                     showBossWarning();
                 }
                 if (typeof enemies.spawnBoss === 'function') {
-                    enemies.spawnBoss();
+					const bossCount = currentWave;
+                    for (let i = 0; i < bossCount; i++) {
+						enemies.spawnBoss();
+					} 
                 }
             }
         }
@@ -526,7 +529,7 @@ function animate() {
     }
 
     // --- BOSS HP BAR UI ---
-    updateBossHealthUI();
+	// updateBossHealthUI();
 
     // --- WAVE COMPLETION CHECK ---
     // Conditions to start next wave:
@@ -576,6 +579,7 @@ function handleCoreHit() {
 	health -= 1;
 	console.log(`Core Hit! HP: ${health}`);
 	updateHealthUI();
+	world.updateCoreTex(health);
 
 	// Flash global HP bar when core takes damage
 	if (healthFill) {
