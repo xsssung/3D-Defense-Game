@@ -22,9 +22,38 @@ coreTexLargeDamage.wrapS = THREE.RepeatWrapping;
 coreTexLargeDamage.wrapT = THREE.RepeatWrapping;
 coreTexLargeDamage.repeat.set(1,1);
 
-const tex = loader.load('textures/grass_pixel.jpg'); // <-- put your file here
+const coreTexReallyLargeDamage = loader.load("textures/Old_Red_Brick_Really_Large_Cracks_DIFF.png");
+coreTexReallyLargeDamage.wrapS = THREE.RepeatWrapping;
+coreTexReallyLargeDamage.wrapT = THREE.RepeatWrapping;
+coreTexReallyLargeDamage.repeat.set(1,1);
 
+const grass_tex = loader.load('textures/grass_pixel.jpg');
+// Repeat texture across the field
+grass_tex.wrapS = THREE.RepeatWrapping;
+grass_tex.wrapT = THREE.RepeatWrapping;
+grass_tex.repeat.set(40, 40);
 
+// Keep pixel-art look sharp
+grass_tex.magFilter = THREE.NearestFilter;
+grass_tex.minFilter = THREE.NearestFilter;
+
+const snow_tex = loader.load('textures/snow_pixel.jpg');
+snow_tex.wrapS = THREE.RepeatWrapping;
+snow_tex.wrapT = THREE.RepeatWrapping;
+snow_tex.repeat.set(40, 40);
+
+// Keep pixel-art look sharp
+snow_tex.magFilter = THREE.NearestFilter;
+snow_tex.minFilter = THREE.NearestFilter;
+
+const sand_tex = loader.load('textures/sand_pixel.jpg');
+sand_tex.wrapS = THREE.RepeatWrapping;
+sand_tex.wrapT = THREE.RepeatWrapping;
+sand_tex.repeat.set(40, 40);
+
+// Keep pixel-art look sharp
+sand_tex.magFilter = THREE.NearestFilter;
+sand_tex.minFilter = THREE.NearestFilter;
 
 export class World {
 	constructor(scene) {
@@ -40,6 +69,16 @@ export class World {
 		// Ground (used for biome switching)
 		this.ground       = null;
 		this.currentBiome = 'grass';
+
+		// Add references to preloaded textures
+		this.textures = {
+			grass: grass_tex,
+			sand: sand_tex,
+			snow: snow_tex
+		};
+
+		this.snowParticles = null;
+		this.sandParticles = null;
 	}
 
 	// --------------------------------------------------------
@@ -48,21 +87,11 @@ export class World {
 	createField() {
 		const planeGeo = new THREE.PlaneGeometry(FIELD_SIZE, FIELD_SIZE);
 
-		// Repeat texture across the field
-		tex.wrapS = THREE.RepeatWrapping;
-		tex.wrapT = THREE.RepeatWrapping;
-		tex.repeat.set(40, 40);
-
-		// Keep pixel-art look sharp
-		tex.magFilter = THREE.NearestFilter;
-		tex.minFilter = THREE.NearestFilter;
-
 		// Ground material using the pixel grass texture
 		const planeMat = new THREE.MeshStandardMaterial({
-			map: tex,
+			map: this.textures.grass,
 			roughness: 1.0,
 			metalness: 0.0,
-			color: 0xffffff // neutral tint; biome will override this
 		});
 
 		const ground = new THREE.Mesh(planeGeo, planeMat);
@@ -181,6 +210,86 @@ export class World {
 		this.ambientLight = ambient;
 	}
 
+	//---------------------------------------------------------
+	// Create SNOW particle system
+	//---------------------------------------------------------
+	createSnow() {
+		if (this.snowParticles) return; // already exists
+
+		const count = 5000;
+		const geo = new THREE.BufferGeometry();
+		const positions = new Float32Array(count * 3);
+
+		for (let i = 0; i < count; i++) {
+			positions[i*3 + 0] = (Math.random() - 0.5) * FIELD_SIZE;
+			positions[i*3 + 1] = Math.random() * 80 + 20;  // Height
+			positions[i*3 + 2] = (Math.random() - 0.5) * FIELD_SIZE;
+		}
+
+		geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+		const mat = new THREE.PointsMaterial({
+			color: 0xffffff,
+			size: 0.4,
+			transparent: true,
+			opacity: 0.85,
+			sizeAttenuation: true
+		});
+
+		this.snowParticles = new THREE.Points(geo, mat);
+		this.scene.add(this.snowParticles);
+	}
+
+	//---------------------------------------------------------
+	// Create SAND particle system
+	//---------------------------------------------------------
+	createSand() {
+		if (this.sandParticles) return;
+
+		const count = 4000;
+		const geo = new THREE.BufferGeometry();
+		const positions = new Float32Array(count * 3);
+
+		for (let i = 0; i < count; i++) {
+			positions[i*3 + 0] = (Math.random() - 0.5) * FIELD_SIZE;
+			positions[i*3 + 1] = Math.random() * 20 + 2; // lower height = blowing dust
+			positions[i*3 + 2] = (Math.random() - 0.5) * FIELD_SIZE;
+		}
+
+		geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+		const mat = new THREE.PointsMaterial({
+			color: 0xdeb887,  // sandy tan color
+			size: 0.25,
+			transparent: true,
+			opacity: 0.7,
+			sizeAttenuation: true
+		});
+
+		this.sandParticles = new THREE.Points(geo, mat);
+		this.scene.add(this.sandParticles);
+	}
+
+	//---------------------------------------------------------
+	// Remove particles when switching biomes
+	//---------------------------------------------------------
+	removeSnow() {
+		if (!this.snowParticles) return;
+		this.scene.remove(this.snowParticles);
+		this.snowParticles.geometry.dispose();
+		this.snowParticles.material.dispose();
+		this.snowParticles = null;
+	}
+
+	removeSand() {
+		if (!this.sandParticles) return;
+		this.scene.remove(this.sandParticles);
+		this.sandParticles.geometry.dispose();
+		this.sandParticles.material.dispose();
+		this.sandParticles = null;
+	}
+
+
 	// --------------------------------------------------------
 	// Biome control (grass / desert / snow)
 	// --------------------------------------------------------
@@ -190,18 +299,58 @@ export class World {
 		if (!this.ground) return;
 
 		const mat = this.ground.material;
+		
+		this.removeSand();
+		this.removeSnow();
 
 		// Color tints multiply the base texture
 		if (biome === 'grass') {
-			mat.color.set(0xffffff);      // Neutral (original green)
+			mat.map = this.textures.grass;  
 		} else if (biome === 'desert') {
-			mat.color.set(0xf2e0a0);      // Warm sand tint
+			mat.map = this.textures.sand; 
+			this.createSand();     
 		} else if (biome === 'snow') {
-			mat.color.set(0xf5f7ff);      // Cold, bright tint
+			mat.map = this.textures.snow; 
+			this.createSnow();
 		}
 
 		mat.needsUpdate = true;
 	}
+
+	//----------------------------------------------------------
+	// update sand and snow particles
+	//-----------------------------------------------------------
+
+	updateParticles(deltaTime) {
+		// Snow falls downward
+		if (this.snowParticles) {
+			const pos = this.snowParticles.geometry.attributes.position.array;
+			for (let i = 0; i < pos.length; i += 3) {
+				pos[i + 1] -= 8 * deltaTime; // fall speed
+
+				// Respawn at top
+				if (pos[i + 1] < 0) {
+					pos[i + 1] = 80;
+				}
+			}
+			this.snowParticles.geometry.attributes.position.needsUpdate = true;
+		}
+
+		// Sand blows sideways
+		if (this.sandParticles) {
+			const pos = this.sandParticles.geometry.attributes.position.array;
+			for (let i = 0; i < pos.length; i += 3) {
+				pos[i + 0] += 14 * deltaTime; // wind direction x+
+
+				// wrap around world
+				if (pos[i + 0] > FIELD_SIZE / 2) {
+					pos[i + 0] = -FIELD_SIZE / 2;
+				}
+			}
+			this.sandParticles.geometry.attributes.position.needsUpdate = true;
+		}
+	}
+
 
 	// Choose biome given a wave index:
 	// 1 -> grass, 2 -> desert, 3 -> snow, 4 -> grass, ...
@@ -331,7 +480,9 @@ export class World {
 	updateCoreTex(coreHealth) {
 		if (!this.core) return;
 
-		if (coreHealth <= 7) {
+		if (coreHealth <= 5) {
+			this.core.material.map = coreTexReallyLargeDamage;
+		} else if (coreHealth <= 10) {
 			this.core.material.map = coreTexLargeDamage;
 		} else if (coreHealth <= 15) {
 			this.core.material.map = coreTexSmallDamage;

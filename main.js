@@ -457,6 +457,9 @@ function animate() {
     // Track total world time (for day/night system)
     globalTime += delta;
 
+	// update particles 
+	world.updateParticles(delta);
+
     // --- WORLD LIGHTING / DAY-NIGHT ---
     if (world && typeof world.updateDayNight === 'function') {
         world.updateDayNight(globalTime, bossPhase);
@@ -549,9 +552,7 @@ function animate() {
         waveLabelEl.textContent = `Wave ${currentWave}`;
 
         // Change biome
-        if (world && typeof world.setBiomeForWave === 'function') {
-            world.setBiomeForWave(currentWave);
-        }
+		world.setBiomeForWave(currentWave);
 
         // Prepare next wave
         spawner.setWave(currentWave);
